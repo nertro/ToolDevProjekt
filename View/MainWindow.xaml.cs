@@ -17,6 +17,7 @@ namespace ToolDevProjekt.View
         private App controller;
         private bool brushDown = false;
         private Image[,] mapCanvasIMGs;
+        private Image playerIMG;
 
         public MainWindow()
         {
@@ -68,8 +69,8 @@ namespace ToolDevProjekt.View
         public void DrawMap(Map map)
         {
             MapCanvas.Children.Clear();
-            MapCanvas.Width = 32 * map.Width;
-            MapCanvas.Height = 32 * map.Height;
+            MapCanvas.Width = this.controller.TileWidth * map.Width;
+            MapCanvas.Height = this.controller.TileHeight * map.Height;
 
             mapCanvasIMGs = new Image[map.Width, map.Height];
             for (int x = 0; x < map.Width; x++)
@@ -78,8 +79,8 @@ namespace ToolDevProjekt.View
                 {
                     Image img = new Image
                     {
-                        Width = 32,
-                        Height = 32,
+                        Width = this.controller.TileWidth,
+                        Height = this.controller.TileHeight,
                         Source = this.controller.TileIMG(map.Tiles[x, y].Type),
                         Tag = new Vector2(map.Tiles[x,y].Position.X, map.Tiles[x,y].Position.Y)
                     };
@@ -89,15 +90,35 @@ namespace ToolDevProjekt.View
                     img.MouseMove += this.OnDraw;
                     this.MapCanvas.Children.Add(img);
                     mapCanvasIMGs[x, y] = img;
-                    Canvas.SetLeft(img, x * 32);
-                    Canvas.SetTop(img, y * 32);
+                    Canvas.SetLeft(img, x * this.controller.TileWidth);
+                    Canvas.SetTop(img, y * this.controller.TileHeight);
+                    Canvas.SetZIndex(img, 1);
                 }
             }
         }
 
-        public void UpdateMap(Vector2 position, BitmapImage tileIMG)
+        public void UpdateMap(Vector2 position, BitmapImage brushIMG)
         {
-            mapCanvasIMGs[position.X, position.Y].Source = tileIMG;
+            if (this.controller.TileBrushSelected)
+            {
+                mapCanvasIMGs[position.X, position.Y].Source = brushIMG;
+            }
+            else
+            {
+                if (playerIMG == null)
+                {
+                    playerIMG = new Image
+                    {
+                        Width = 32,
+                        Height = 32,
+                        Source = brushIMG
+                    };
+                    this.MapCanvas.Children.Add(playerIMG);
+                }
+                Canvas.SetLeft(playerIMG,position.X * this.controller.TileWidth);
+                Canvas.SetTop(playerIMG, position.Y * this.controller.TileHeight);
+                Canvas.SetZIndex(playerIMG, 10);
+            }
         }
 
         private void Brush_Checked(object sender, RoutedEventArgs e)
@@ -111,7 +132,6 @@ namespace ToolDevProjekt.View
             this.brushDown = true;
             Image img = (Image)sender;
             Vector2 position = (Vector2)img.Tag;
-            this.controller.OnDraw(position);
         }
 
         private void BrushUp(object sender, MouseButtonEventArgs e)
@@ -129,6 +149,16 @@ namespace ToolDevProjekt.View
             Image img = (Image)sender;
             Vector2 position = (Vector2)img.Tag;
             this.controller.OnDraw(position);
+        }
+
+        private void ExecutePlay(object sender, ExecutedRoutedEventArgs e)
+        {
+
+        }
+
+        private void CanExecutePlay(object sender, CanExecuteRoutedEventArgs e)
+        {
+
         }
     }
 }

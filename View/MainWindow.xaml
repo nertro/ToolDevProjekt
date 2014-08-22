@@ -10,12 +10,18 @@
                 <MenuItem Header="Save" Command="ApplicationCommands.Save"></MenuItem>
                 <MenuItem Header="Quit" Command="ApplicationCommands.Close"></MenuItem>
             </MenuItem>
+            <MenuItem Header="_Play">
+                <MenuItem Header="Play" Command="Play"></MenuItem>
+            </MenuItem>
         </Menu>
         <DockPanel DockPanel.Dock="Top">
             <StackPanel DockPanel.Dock="Left" Margin="10">
-                <RadioButton Name="Desert" IsChecked="True" Checked="Brush_Checked">Stone</RadioButton>
-                <RadioButton Name="Grass" Checked="Brush_Checked">Grass</RadioButton>
-                <RadioButton Name="Water" Checked="Brush_Checked">Water</RadioButton>
+                    <TextBlock >Brushes</TextBlock>
+                    <RadioButton Name="Desert" IsChecked="True" Checked="Brush_Checked">Stone</RadioButton>
+                    <RadioButton Name="Grass" Checked="Brush_Checked">Grass</RadioButton>
+                    <RadioButton Name="Water" Checked="Brush_Checked">Water</RadioButton>
+                    <TextBox>Entities</TextBox>
+                    <RadioButton Name="Link" Checked="Brush_Checked">Link</RadioButton>
             </StackPanel>
             <ScrollViewer DockPanel.Dock="Right" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible">
                 <Canvas Name="MapCanvas"/>
@@ -35,5 +41,8 @@
         <CommandBinding Command="ApplicationCommands.Close"
                         Executed="ExecutedClose"
                         CanExecute="CanExecuteClose"/>
+        <CommandBinding Command="Play"
+                        Executed="ExecutePlay"
+                        CanExecute="CanExecutePlay" />
     </Window.CommandBindings>
 </Window>

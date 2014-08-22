@@ -11,6 +11,7 @@ namespace ToolDevProjekt.Control
     using Microsoft.Win32;
 
     using ToolDevProjekt.Model;
+    using ToolDevProjekt.Model.Game;
     using ToolDevProjekt.View;
     public partial class App
     {
@@ -19,9 +20,18 @@ namespace ToolDevProjekt.Control
         private Map map;
         private Dictionary<string, TileType> tileTypes;
         private Dictionary<string, BitmapImage> tileIMGs;
-        private double tileWidth;
-        private double tileHeight;
+        private Dictionary<string, BitmapImage> entitySprites;
         private TileType selectedBrush;
+        private string selectedEntity;
+        private BitmapImage entitySprite;
+        private bool playerSet;
+
+        public int TileWidth;
+        public int TileHeight;
+
+        public bool PlayerSet { get { return this.playerSet; } }
+        public bool TileBrushSelected{get; private set;}
+        public bool PlayGame { get; set; }
 
         public BitmapImage TileIMG(string tileType)
         {
@@ -47,7 +57,7 @@ namespace ToolDevProjekt.Control
         {
             return true;
         }
-
+        #region openFile
         public void ExecuteOpen()
         {
             OpenFileDialog openDialog = new OpenFileDialog
@@ -104,7 +114,7 @@ namespace ToolDevProjekt.Control
                         reader.ReadStartElement();
                         string tileType = reader.ReadContentAsString();
 
-                        newMap.Tiles[xPos, yPos] = new MapTile(xPos, yPos, tileType);
+                        newMap.Tiles[xPos, yPos] = new MapTile(xPos, yPos, this.TileWidth, this.TileHeight, tileType);
                     }
 
                     this.map = newMap;
@@ -112,12 +122,12 @@ namespace ToolDevProjekt.Control
                 }
             }
         }
-
+        #endregion
         public void ExecuteNew()
         {
             this.OpenNewWindow();
         }
-
+        #region saveFile
         public void ExecuteSave()
         {
             SaveFileDialog saveDialog = new SaveFileDialog
@@ -165,12 +175,12 @@ namespace ToolDevProjekt.Control
                 }
             }
         }
-
+        #endregion
         public void ExecuteClose()
         {
             this.Shutdown();
         }
-
+        #region newMap
         public void CreateNewMap(int width, int height)
         {
             this.map = new Map(width, height);
@@ -179,7 +189,7 @@ namespace ToolDevProjekt.Control
             {
                 for (int y = 0; y < height; y++)
                 {
-                    map.Tiles[x, y] = new MapTile(x, y, "Water");
+                    map.Tiles[x, y] = new MapTile(x, y, this.TileWidth, this.TileHeight, "Water");
                 }
             }
 
@@ -196,25 +206,43 @@ namespace ToolDevProjekt.Control
 
             this.newWindow.Show();
         }
-
-        public void OnBrushSelected(string tileType)
+        #endregion
+        public void OnBrushSelected(string brushType)
         {
-            this.selectedBrush = tileTypes[tileType];
+            foreach (var tileType in tileTypes)
+            {
+                if (tileType.Key == brushType)
+                {
+                    this.selectedBrush = tileTypes[brushType];
+                    TileBrushSelected = true;
+                    return;
+                }
+            }
+            TileBrushSelected = false;
+            this.selectedEntity = brushType;
         }
 
         public void OnDraw(Vector2 position)
         {
-            this.map.Tiles[position.X, position.Y].Type = this.selectedBrush.Name;
-            this.mainWindow.UpdateMap(position, tileIMGs[this.selectedBrush.Name]);
+            if (TileBrushSelected)
+            {
+                this.map.Tiles[position.X, position.Y].Type = this.selectedBrush.Name;
+                this.mainWindow.UpdateMap(position, tileIMGs[this.selectedBrush.Name]);
+            }
+            else
+            {
+                this.playerSet = true;
+                this.mainWindow.UpdateMap(position, entitySprite);
+            }
         }
-
+        #region AppStartActivate
         private void Application_Startup(object sender, System.Windows.StartupEventArgs e)
         {
             this.tileTypes = new Dictionary<string, TileType>();
 
-            tileTypes.Add("Desert", new TileType("Desert"));
-            tileTypes.Add("Grass", new TileType("Grass"));
-            tileTypes.Add("Water", new TileType("Water"));
+            tileTypes.Add("Desert", new TileType("Desert", true));
+            tileTypes.Add("Grass", new TileType("Grass", true));
+            tileTypes.Add("Water", new TileType("Water", false));
 
             tileIMGs = new Dictionary<string, BitmapImage>();
 
@@ -228,14 +256,28 @@ namespace ToolDevProjekt.Control
                 tileIMG.EndInit();
 
                 tileIMGs.Add(tileType.Key, tileIMG);
-                tileWidth = tileIMG.Width;
-                tileHeight = tileIMG.Height;
             }
+
+            this.TileWidth = 32;
+            this.TileHeight = 32;
+
+            entitySprites = new Dictionary<string, BitmapImage>();
+
+            entitySprite = new BitmapImage();
+            string spriteURI = "pack://application:,,,/Resources/Link.png";
+            entitySprite.BeginInit();
+            entitySprite.UriSource = new Uri(spriteURI);
+            entitySprite.EndInit();
+
+            entitySprites.Add("Link", entitySprite);
         }
 
         private void Application_Activated(object sender, EventArgs e)
         {
             this.mainWindow = (MainWindow)MainWindow;
+            this.PlayGame = false;
+            this.playerSet = false;
         }
+        #endregion
     }
 }
