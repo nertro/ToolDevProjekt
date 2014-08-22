@@ -1,0 +1,17 @@
+﻿<Window x:Class="ToolDevProjekt.View.NewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New" Height="150" Width="300">
+    
+    <StackPanel>
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Left" Margin="5">New Map Width</TextBlock>
+            <TextBox Name="TextBoxWidth" Margin="5">32</TextBox>
+        </DockPanel>
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Left" Margin="5">New Map Height</TextBlock>
+            <TextBox Name="TextBoxHeight" Margin="5">32</TextBox>
+        </DockPanel>
+        <Button Click="NewMapButton_Click" Margin="5">Create New Map</Button>
+    </StackPanel>
+</Window>
