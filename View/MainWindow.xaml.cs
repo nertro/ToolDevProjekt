@@ -19,6 +19,8 @@ namespace ToolDevProjekt.View
         private Image[,] mapCanvasIMGs;
         private Image playerIMG;
 
+        public Image PlayerIMG { get { return this.playerIMG; } } 
+
         public MainWindow()
         {
             this.controller = (App)Application.Current;
@@ -81,7 +83,7 @@ namespace ToolDevProjekt.View
                     {
                         Width = this.controller.TileWidth,
                         Height = this.controller.TileHeight,
-                        Source = this.controller.TileIMG(map.Tiles[x, y].Type),
+                        Source = this.controller.TileIMG(map.Tiles[x, y].Type.Name),
                         Tag = new Vector2(map.Tiles[x,y].Position.X, map.Tiles[x,y].Position.Y)
                     };
 
@@ -99,9 +101,9 @@ namespace ToolDevProjekt.View
 
         public void UpdateMap(Vector2 position, BitmapImage brushIMG)
         {
-            if (this.controller.TileBrushSelected)
+            if (this.controller.TileBrushSelected &! this.controller.PlayGame)
             {
-                mapCanvasIMGs[position.X, position.Y].Source = brushIMG;
+                mapCanvasIMGs[position.X / this.controller.TileWidth, position.Y / this.controller.TileHeight].Source = brushIMG;
             }
             else
             {
@@ -111,12 +113,17 @@ namespace ToolDevProjekt.View
                     {
                         Width = 32,
                         Height = 32,
-                        Source = brushIMG
+                        Source = brushIMG,
+                        Tag = new Vector2(position.X, position.Y)
                     };
+                    playerIMG.MouseLeftButtonDown += this.BrushDown;
+                    playerIMG.MouseLeftButtonUp += this.BrushUp;
+                    playerIMG.MouseMove += this.OnDraw;
                     this.MapCanvas.Children.Add(playerIMG);
                 }
-                Canvas.SetLeft(playerIMG,position.X * this.controller.TileWidth);
-                Canvas.SetTop(playerIMG, position.Y * this.controller.TileHeight);
+                playerIMG.Tag = new Vector2(position.X, position.Y);
+                Canvas.SetLeft(playerIMG,position.X);
+                Canvas.SetTop(playerIMG, position.Y);
                 Canvas.SetZIndex(playerIMG, 10);
             }
         }
@@ -130,8 +137,10 @@ namespace ToolDevProjekt.View
         private void BrushDown(object sender, MouseButtonEventArgs e)
         {
             this.brushDown = true;
+
             Image img = (Image)sender;
             Vector2 position = (Vector2)img.Tag;
+            this.controller.OnDraw(position);
         }
 
         private void BrushUp(object sender, MouseButtonEventArgs e)
@@ -151,14 +160,46 @@ namespace ToolDevProjekt.View
             this.controller.OnDraw(position);
         }
 
+        #region Game
         private void ExecutePlay(object sender, ExecutedRoutedEventArgs e)
         {
-
+            this.controller.ExecutePlay();
         }
 
         private void CanExecutePlay(object sender, CanExecuteRoutedEventArgs e)
         {
-
+            e.CanExecute = this.controller.CanExecutePlay();
         }
+
+        private void ExecuteEndGame(object sender, ExecutedRoutedEventArgs e)
+        {
+            this.controller.ExecuteEndGame();
+        }
+
+        private void CanExecuteEndGame(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = this.controller.CanExecuteEndGame();
+        }
+
+        public void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.W || e.Key == Key.Up)
+            {
+                this.controller.OnPlayGame(App.Directions.Up, (Vector2)this.playerIMG.Tag);
+            }
+            else if (e.Key == Key.S || e.Key == Key.Down)
+            {
+                this.controller.OnPlayGame(App.Directions.Down, (Vector2)this.playerIMG.Tag);
+            }
+            else if (e.Key == Key.A || e.Key == Key.Left)
+            {
+                this.controller.OnPlayGame(App.Directions.Left, (Vector2)this.playerIMG.Tag);
+            }
+            else if (e.Key == Key.D || e.Key == Key.Right)
+            {
+                this.controller.OnPlayGame(App.Directions.Right, (Vector2)this.playerIMG.Tag);
+            }
+        }
+        #endregion
     }
 }

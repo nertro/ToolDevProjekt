@@ -1,7 +1,7 @@
 ﻿
 namespace ToolDevProjekt.Model
 {
-    class TileType
+    public class TileType
     {
         public string Name { get; set; }
         public bool Walkable { get; private set; }

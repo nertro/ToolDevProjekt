@@ -7,6 +7,7 @@ namespace ToolDevProjekt.Control
     using System.Collections;
     using System.Collections.Generic;
     using System.Windows.Media.Imaging;
+    using System.Windows.Input;
 
     using Microsoft.Win32;
 
@@ -40,16 +41,28 @@ namespace ToolDevProjekt.Control
 
         public bool CanExecuteNew()
         {
+            if (PlayGame)
+            {
+                return false;
+            }
             return true;
         }
 
         public bool CanExecuteOpen()
         {
+            if (PlayGame)
+            {
+                return false;
+            }
             return true;
         }
 
         public bool CanExecuteSave()
         {
+            if (PlayGame)
+            {
+                return false;
+            }
             return true;
         }
 
@@ -114,7 +127,7 @@ namespace ToolDevProjekt.Control
                         reader.ReadStartElement();
                         string tileType = reader.ReadContentAsString();
 
-                        newMap.Tiles[xPos, yPos] = new MapTile(xPos, yPos, this.TileWidth, this.TileHeight, tileType);
+                        newMap.Tiles[xPos, yPos] = new MapTile(xPos, yPos, this.TileWidth, this.TileHeight, tileTypes[tileType]);
                     }
 
                     this.map = newMap;
@@ -164,7 +177,7 @@ namespace ToolDevProjekt.Control
 
                         writer.WriteElementString("XPos", tile.Position.X.ToString());
                         writer.WriteElementString("YPos", tile.Position.Y.ToString());
-                        writer.WriteElementString("Type", tile.Type);
+                        writer.WriteElementString("Type", tile.Type.Name);
 
                         writer.WriteEndElement();
                     }
@@ -189,7 +202,7 @@ namespace ToolDevProjekt.Control
             {
                 for (int y = 0; y < height; y++)
                 {
-                    map.Tiles[x, y] = new MapTile(x, y, this.TileWidth, this.TileHeight, "Water");
+                    map.Tiles[x, y] = new MapTile(x * this.TileWidth, y * this.TileHeight, this.TileWidth, this.TileHeight, tileTypes["Water"]);
                 }
             }
 
@@ -226,13 +239,16 @@ namespace ToolDevProjekt.Control
         {
             if (TileBrushSelected)
             {
-                this.map.Tiles[position.X, position.Y].Type = this.selectedBrush.Name;
+                this.map.Tiles[position.X / this.TileWidth, position.Y / this.TileHeight].Type = tileTypes[this.selectedBrush.Name];
                 this.mainWindow.UpdateMap(position, tileIMGs[this.selectedBrush.Name]);
             }
             else
             {
-                this.playerSet = true;
-                this.mainWindow.UpdateMap(position, entitySprite);
+                if (map.Tiles[position.X / this.TileWidth, position.Y / this.TileHeight].Type.Walkable)
+                {
+                    this.playerSet = true;
+                    this.mainWindow.UpdateMap(position, entitySprite);
+                }
             }
         }
         #region AppStartActivate
@@ -278,6 +294,56 @@ namespace ToolDevProjekt.Control
             this.PlayGame = false;
             this.playerSet = false;
         }
+        #endregion
+
+        #region Game
+        private Player player;
+        public enum Directions
+        {
+            Up,
+            Down,
+            Left,
+            Right
+        }
+
+        public bool CanExecutePlay()
+        {
+            if (playerSet)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CanExecuteEndGame()
+        {
+            if (PlayGame)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public void ExecutePlay()
+        {
+            this.PlayGame = true;
+            this.mainWindow.KeyDown += new KeyEventHandler(this.mainWindow.OnKeyDown);
+            this.player = new Player(this.entitySprite, (Vector2)this.mainWindow.PlayerIMG.Tag);
+        }
+
+        public void ExecuteEndGame()
+        {
+            this.PlayGame = false;
+            this.player = null;
+            this.mainWindow.KeyDown -= this.mainWindow.OnKeyDown;
+        }
+
+        public void OnPlayGame(App.Directions newDirection, Vector2 position)
+        {
+            this.mainWindow.UpdateMap(this.player.Move(newDirection, this.map), entitySprite);
+        }
+
         #endregion
     }
 }

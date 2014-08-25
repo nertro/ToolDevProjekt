@@ -11,7 +11,8 @@
                 <MenuItem Header="Quit" Command="ApplicationCommands.Close"></MenuItem>
             </MenuItem>
             <MenuItem Header="_Play">
-                <MenuItem Header="Play" Command="Play"></MenuItem>
+                <MenuItem Header="Start Game" Command="Play"></MenuItem>
+                <MenuItem Header="End Game" Command="Stop"></MenuItem>
             </MenuItem>
         </Menu>
         <DockPanel DockPanel.Dock="Top">
@@ -44,5 +45,8 @@
         <CommandBinding Command="Play"
                         Executed="ExecutePlay"
                         CanExecute="CanExecutePlay" />
+        <CommandBinding Command="Stop"
+                        Executed="ExecuteEndGame"
+                        CanExecute="CanExecuteEndGame" />
     </Window.CommandBindings>
 </Window>

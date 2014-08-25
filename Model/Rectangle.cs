@@ -14,10 +14,31 @@ namespace ToolDevProjekt.Model
 
         public bool Intersect(Rectangle other)
         {
-            if (other.position.X > this.position.X 
-                && other.position.X < this.position.X + this.width
-                && other.position.Y > this.position.Y
-                && other.position.Y < this.position.Y + this.height)
+            if (this.position.X >= other.position.X 
+                && this.position.X < other.position.X + other.Width
+                && this.position.Y >= other.position.Y
+                && this.position.Y < other.position.Y + other.Height)
+            {
+                return true;
+            }
+            else if (this.position.X + this.width >= other.position.X 
+                && this.position.X + this.width < other.position.X + other.Width
+                && this.position.Y >= other.position.Y
+                && this.position.Y < other.position.Y + other.Height)
+            {
+                return true;
+            }
+            else if (this.position.X >= other.position.X
+              && this.position.X < other.position.X + other.Width
+              && this.position.Y + this.height >= other.position.Y
+              && this.position.Y + this.height < other.position.Y + other.Height)
+            {
+                return true;
+            }
+            else if (this.position.X + this.Width >= other.position.X
+              && this.position.X + this.Width < other.position.X + other.Width
+              && this.position.Y + this.height >= other.position.Y
+              && this.position.Y + this.height < other.position.Y + other.Height)
             {
                 return true;
             }
