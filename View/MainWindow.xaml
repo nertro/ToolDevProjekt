@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Tool Dev Projekt" Height="600" Width="800">
     <DockPanel>
-        <Menu DockPanel.Dock="Top">
+        <Menu DockPanel.Dock="Top" Background="LightGray">
             <MenuItem Header="_File">
                 <MenuItem Header="New" Command="ApplicationCommands.New"></MenuItem>
                 <MenuItem Header="Open" Command="ApplicationCommands.Open"></MenuItem>
@@ -12,17 +12,47 @@
             </MenuItem>
             <MenuItem Header="_Play">
                 <MenuItem Header="Start Game" Command="Play"></MenuItem>
+                <MenuItem Header="Pause" Command="Pause"></MenuItem>
                 <MenuItem Header="End Game" Command="Stop"></MenuItem>
             </MenuItem>
         </Menu>
         <DockPanel DockPanel.Dock="Top">
-            <StackPanel DockPanel.Dock="Left" Margin="10">
-                    <TextBlock >Brushes</TextBlock>
-                    <RadioButton Name="Desert" IsChecked="True" Checked="Brush_Checked">Stone</RadioButton>
-                    <RadioButton Name="Grass" Checked="Brush_Checked">Grass</RadioButton>
-                    <RadioButton Name="Water" Checked="Brush_Checked">Water</RadioButton>
-                    <TextBox>Entities</TextBox>
-                    <RadioButton Name="Link" Checked="Brush_Checked">Link</RadioButton>
+            <StackPanel Name="BrushStack" Background="LightGray" DockPanel.Dock="Left" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <!--<TextBlock Margin="5" >Brushes</TextBlock>
+                <RadioButton Margin="5" Name="grass" IsChecked="True" Checked="Brush_Checked">
+                    <Image Source="/Resources/grass.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="grassflower" Checked="Brush_Checked">
+                    <Image Source="/Resources/grassflower.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="earth" Checked="Brush_Checked">
+                    <Image Source="/Resources/earth.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="sand" Checked="Brush_Checked">
+                    <Image Source="/Resources/sand.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="stone" Checked="Brush_Checked">
+                    <Image Source="/Resources/stone.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="lava" Checked="Brush_Checked">
+                    <Image Source="/Resources/lava.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton FlowDirection="RightToLeft" Margin="5" Name="water" Click="Brush_Clicked">
+                    <Image Source="/Resources/water.png" Width="32" Height="32"/>
+                </RadioButton>
+                
+                <Border Background="DarkGray" Width="50" Height="2"/>
+
+                <TextBlock Margin="5">Player</TextBlock>
+                <RadioButton Margin="5" Name="player1" Checked="Brush_Checked">
+                    <Image Source="/Resources/player1.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="player2" Checked="Brush_Checked">
+                    <Image Source="/Resources/player2.png" Width="32" Height="32"/>
+                </RadioButton>
+                <RadioButton Margin="5" Name="player3" Checked="Brush_Checked">
+                    <Image Source="/Resources/player3.png" Width="32" Height="32"/>
+                </RadioButton>-->
             </StackPanel>
             <ScrollViewer DockPanel.Dock="Right" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible">
                 <Canvas Name="MapCanvas"/>
@@ -45,6 +75,9 @@
         <CommandBinding Command="Play"
                         Executed="ExecutePlay"
                         CanExecute="CanExecutePlay" />
+        <CommandBinding Command="Pause"
+                        Executed="ExecutedPause"
+                        CanExecute="CanExecutePause" />
         <CommandBinding Command="Stop"
                         Executed="ExecuteEndGame"
                         CanExecute="CanExecuteEndGame" />

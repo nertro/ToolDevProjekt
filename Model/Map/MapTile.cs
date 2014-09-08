@@ -10,13 +10,13 @@ namespace ToolDevProjekt.Model
     {
         public Vector2 Position { get; private set; }
         public TileType Type { get; set; }
-        public Rectangle rect { get; set; }
+        public Rectangle Rect { get; set; }
 
         public MapTile(int x, int y, int width, int height, TileType type)
         {
             this.Position = new Vector2(x, y);
             this.Type = type;
-            this.rect = new Rectangle(width, height, this.Position);
+            this.Rect = new Rectangle(width, height, this.Position);
         }
     }
 }

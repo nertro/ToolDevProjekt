@@ -26,5 +26,21 @@ namespace ToolDevProjekt.Model
             this.x = x;
             this.y = y;
         }
+
+        public static Vector2 Substract(Vector2 first,Vector2 second)
+        {
+            return new Vector2(first.X - second.X, first.Y - second.Y);
+        }
+
+        public static Vector2 Add(Vector2 first, Vector2 second)
+        {
+            return new Vector2(first.X + second.X, first.Y + second.Y);
+        }
+
+        public static Vector2 Normalize(Vector2 vec)
+        {
+            double length = Math.Sqrt(Math.Sqrt(vec.x)+Math.Sqrt(vec.y));
+            return new Vector2(vec.x / (int)length, vec.y / (int)length);
+        }
     }
 }

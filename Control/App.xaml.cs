@@ -8,6 +8,8 @@ namespace ToolDevProjekt.Control
     using System.Collections.Generic;
     using System.Windows.Media.Imaging;
     using System.Windows.Input;
+    using System.Windows.Controls;
+    using System.Windows;
 
     using Microsoft.Win32;
 
@@ -21,18 +23,30 @@ namespace ToolDevProjekt.Control
         private Map map;
         private Dictionary<string, TileType> tileTypes;
         private Dictionary<string, BitmapImage> tileIMGs;
-        private Dictionary<string, BitmapImage> entitySprites;
+        private Dictionary<string, PlayerType> playerTypes;
+        private Dictionary<string, BitmapImage> playerSprites;
+        private Dictionary<string, EnemyType> enemyTypes;
+        private Dictionary<string, BitmapImage> enemySprites;
         private TileType selectedBrush;
-        private string selectedEntity;
-        private BitmapImage entitySprite;
+        private string selectedPlayer;
+        private string selectedEnemy;
+        private BitmapImage currentPlayerSprite;
+        private Vector2 backupPlayerPos;
+        private bool pause;
         private bool playerSet;
+        private bool enemySet;
 
         public int TileWidth;
         public int TileHeight;
 
         public bool PlayerSet { get { return this.playerSet; } }
+        public bool EnemySet { get { return this.enemySet; } }
         public bool TileBrushSelected{get; private set;}
+        public bool PlayerBrushSelected { get; private set; }
+        public bool EnemyBrushSelected { get; private set; }
         public bool PlayGame { get; set; }
+        public bool EndingGame { get; private set; }
+        public bool EnemyBackup { get; private set; }
 
         public BitmapImage TileIMG(string tileType)
         {
@@ -115,6 +129,10 @@ namespace ToolDevProjekt.Control
 
                     for (int i = 0; i < mapWidth * mapHeight; i++)
                     {
+                        reader.ReadToFollowing("Type");
+                        reader.ReadStartElement();
+                        string tileType = reader.ReadContentAsString();
+
                         reader.ReadToFollowing("XPos");
                         reader.ReadStartElement();
                         int xPos = reader.ReadContentAsInt();
@@ -123,11 +141,7 @@ namespace ToolDevProjekt.Control
                         reader.ReadStartElement();
                         int yPos = reader.ReadContentAsInt();
 
-                        reader.ReadToFollowing("Type");
-                        reader.ReadStartElement();
-                        string tileType = reader.ReadContentAsString();
-
-                        newMap.Tiles[xPos, yPos] = new MapTile(xPos, yPos, this.TileWidth, this.TileHeight, tileTypes[tileType]);
+                        newMap.Tiles[xPos, yPos] = new MapTile(xPos * this.TileWidth, yPos * this.TileHeight, this.TileWidth, this.TileHeight, tileTypes[tileType]);
                     }
 
                     this.map = newMap;
@@ -175,9 +189,9 @@ namespace ToolDevProjekt.Control
                     {
                         writer.WriteStartElement("Tile");
 
-                        writer.WriteElementString("XPos", tile.Position.X.ToString());
-                        writer.WriteElementString("YPos", tile.Position.Y.ToString());
                         writer.WriteElementString("Type", tile.Type.Name);
+                        writer.WriteElementString("XPos", (tile.Position.X/tile.Rect.Width).ToString());
+                        writer.WriteElementString("YPos", (tile.Position.Y/tile.Rect.Width).ToString());
 
                         writer.WriteEndElement();
                     }
@@ -202,7 +216,7 @@ namespace ToolDevProjekt.Control
             {
                 for (int y = 0; y < height; y++)
                 {
-                    map.Tiles[x, y] = new MapTile(x * this.TileWidth, y * this.TileHeight, this.TileWidth, this.TileHeight, tileTypes["Water"]);
+                    map.Tiles[x, y] = new MapTile(x * this.TileWidth, y * this.TileHeight, this.TileWidth, this.TileHeight, tileTypes["water"]);
                 }
             }
 
@@ -231,8 +245,28 @@ namespace ToolDevProjekt.Control
                     return;
                 }
             }
-            TileBrushSelected = false;
-            this.selectedEntity = brushType;
+            foreach (var enemy in enemyTypes)
+            {
+                if (enemy.Key == brushType)
+                {
+                    this.selectedEnemy = brushType;
+                    EnemyBrushSelected = true;
+                    PlayerBrushSelected = false;
+                    TileBrushSelected = false;
+                    return;
+                }
+            }
+            foreach (var player in playerTypes)
+            {
+                if (player.Key == brushType)
+                {
+                    this.selectedPlayer = brushType;
+                    EnemyBrushSelected = false;
+                    PlayerBrushSelected = true;
+                    TileBrushSelected = false;
+                    return;
+                }
+            }
         }
 
         public void OnDraw(Vector2 position)
@@ -240,25 +274,126 @@ namespace ToolDevProjekt.Control
             if (TileBrushSelected)
             {
                 this.map.Tiles[position.X / this.TileWidth, position.Y / this.TileHeight].Type = tileTypes[this.selectedBrush.Name];
-                this.mainWindow.UpdateMap(position, tileIMGs[this.selectedBrush.Name]);
+                this.mainWindow.UpdateMap(position, tileIMGs[this.selectedBrush.Name], this.selectedBrush.Name);
             }
-            else
+            else if(PlayerBrushSelected)
             {
                 if (map.Tiles[position.X / this.TileWidth, position.Y / this.TileHeight].Type.Walkable)
                 {
                     this.playerSet = true;
-                    this.mainWindow.UpdateMap(position, entitySprite);
+                    this.currentPlayerSprite = this.playerSprites[this.selectedPlayer];
+                    this.mainWindow.UpdateMap(position, playerSprites[this.selectedPlayer], selectedPlayer);
+                }
+            }
+            else if (EnemyBrushSelected)
+            {
+                if (map.Tiles[position.X / this.TileWidth, position.Y / this.TileHeight].Type.Walkable)
+                {
+                    this.enemySet = true;
+                    this.mainWindow.UpdateMap(position, enemySprites[this.selectedEnemy], selectedEnemy);
                 }
             }
         }
         #region AppStartActivate
-        private void Application_Startup(object sender, System.Windows.StartupEventArgs e)
+
+        private void Application_Activated(object sender, EventArgs e)
         {
+            this.mainWindow = (MainWindow)MainWindow;
+
+            RadioButton rbtn;
+            //Set Player Types and Brushes
+            TextBlock menuTextblock = new TextBlock();
+            menuTextblock.Text = "Players";
+            this.mainWindow.BrushStack.Children.Add(menuTextblock);
+
+            playerTypes = new Dictionary<string, PlayerType>();
+
+            playerTypes.Add("red", new PlayerType("red", 75, 4));
+            playerTypes.Add("green", new PlayerType("green", 100, 2));
+            playerTypes.Add("baby", new PlayerType("baby", 50, 6));
+
+            playerSprites = new Dictionary<string, BitmapImage>();
+
+            foreach (var type in playerTypes)
+            {
+                string spriteURI = "pack://application:,,,/Resources/" + type.Key + ".png";
+
+                BitmapImage playerSprite = new BitmapImage();
+                playerSprite.BeginInit();
+                playerSprite.UriSource = new Uri(spriteURI);
+                playerSprite.EndInit();
+
+                playerSprites.Add(type.Key, playerSprite);
+
+                rbtn = new RadioButton();
+                rbtn.Margin = new System.Windows.Thickness(Convert.ToDouble(5));
+                rbtn.Name = type.Key;
+                rbtn.Checked += this.mainWindow.Brush_Checked;
+                rbtn.Content = new Image
+                {
+                    Source = playerSprite,
+                    Width = 32,
+                    Height = 32
+                };
+                if (rbtn.Name == "grass")
+                {
+                    rbtn.IsChecked = true;
+                }
+                this.mainWindow.BrushStack.Children.Add(rbtn);
+            }
+
+            menuTextblock = new TextBlock();
+            menuTextblock.Text = "Enemies";
+            this.mainWindow.BrushStack.Children.Add(menuTextblock);
+
+            enemyTypes = new Dictionary<string, EnemyType>();
+
+            enemyTypes.Add("pike", new EnemyType("pike", 2));
+            enemyTypes.Add("blob", new EnemyType("blob", 1));
+
+            enemySprites = new Dictionary<string, BitmapImage>();
+
+            foreach (var type in enemyTypes)
+            {
+                string spriteURI = "pack://application:,,,/Resources/" + type.Key + ".png";
+
+                BitmapImage enemySprite = new BitmapImage();
+                enemySprite.BeginInit();
+                enemySprite.UriSource = new Uri(spriteURI);
+                enemySprite.EndInit();
+
+                enemySprites.Add(type.Key, enemySprite);
+
+                rbtn = new RadioButton();
+                rbtn.Margin = new System.Windows.Thickness(Convert.ToDouble(5));
+                rbtn.Name = type.Key;
+                rbtn.Checked += this.mainWindow.Brush_Checked;
+                rbtn.Content = new Image
+                {
+                    Source = enemySprite,
+                    Width = 32,
+                    Height = 32
+                };
+                if (rbtn.Name == "grass")
+                {
+                    rbtn.IsChecked = true;
+                }
+                this.mainWindow.BrushStack.Children.Add(rbtn);
+            }
+
+            menuTextblock = new TextBlock();
+            menuTextblock.Text = "Tile Brushes";
+
+            this.mainWindow.BrushStack.Children.Add(menuTextblock);
             this.tileTypes = new Dictionary<string, TileType>();
 
-            tileTypes.Add("Desert", new TileType("Desert", true));
-            tileTypes.Add("Grass", new TileType("Grass", true));
-            tileTypes.Add("Water", new TileType("Water", false));
+            tileTypes.Add("grass", new TileType("grass", true, false));
+            tileTypes.Add("grassflower", new TileType("grassflower", true, false));
+            tileTypes.Add("earth", new TileType("earth", true, false));
+            tileTypes.Add("stone", new TileType("stone", false, false));
+            tileTypes.Add("sand", new TileType("sand", true, false));
+            tileTypes.Add("water", new TileType("water", false, false));
+            tileTypes.Add("lava", new TileType("lava", true, true));
 
             tileIMGs = new Dictionary<string, BitmapImage>();
 
@@ -272,25 +407,27 @@ namespace ToolDevProjekt.Control
                 tileIMG.EndInit();
 
                 tileIMGs.Add(tileType.Key, tileIMG);
+
+                rbtn = new RadioButton();
+                rbtn.Margin = new System.Windows.Thickness(Convert.ToDouble(5));
+                rbtn.Name = tileType.Key;
+                rbtn.Checked += this.mainWindow.Brush_Checked;
+                rbtn.Content = new Image
+                {
+                    Source = tileIMG,
+                    Width = 32,
+                    Height = 32
+                };
+                if (rbtn.Name == "grass")
+                {
+                    rbtn.IsChecked = true;
+                }
+                this.mainWindow.BrushStack.Children.Add(rbtn);
             }
 
             this.TileWidth = 32;
             this.TileHeight = 32;
 
-            entitySprites = new Dictionary<string, BitmapImage>();
-
-            entitySprite = new BitmapImage();
-            string spriteURI = "pack://application:,,,/Resources/Link.png";
-            entitySprite.BeginInit();
-            entitySprite.UriSource = new Uri(spriteURI);
-            entitySprite.EndInit();
-
-            entitySprites.Add("Link", entitySprite);
-        }
-
-        private void Application_Activated(object sender, EventArgs e)
-        {
-            this.mainWindow = (MainWindow)MainWindow;
             this.PlayGame = false;
             this.playerSet = false;
         }
@@ -298,6 +435,7 @@ namespace ToolDevProjekt.Control
 
         #region Game
         private Player player;
+        private List<Agent> enemies;
         public enum Directions
         {
             Up,
@@ -309,6 +447,16 @@ namespace ToolDevProjekt.Control
         public bool CanExecutePlay()
         {
             if (playerSet)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CanExecutePause()
+        {
+            if (this.PlayGame)
             {
                 return true;
             }
@@ -329,20 +477,56 @@ namespace ToolDevProjekt.Control
         {
             this.PlayGame = true;
             this.mainWindow.KeyDown += new KeyEventHandler(this.mainWindow.OnKeyDown);
-            this.player = new Player(this.entitySprite, (Vector2)this.mainWindow.PlayerIMG.Tag);
+            if (!pause)
+            {
+                this.backupPlayerPos = (Vector2)this.mainWindow.PlayerIMG.Tag;
+                this.player = new Player(this.playerSprites[this.selectedPlayer], this.backupPlayerPos, this.playerTypes[this.selectedPlayer]);
+                for (int i = 0; i < (playerTypes.Count + enemyTypes.Count + 2); i++)
+                {
+                    this.mainWindow.BrushStack.Children[i].IsEnabled = false;
+                }
+                enemies = new List<Agent>();
+                foreach (var enemyIMG in this.mainWindow.EnemyIMGs)
+                {
+                    enemies.Add(new Agent(enemySprites[enemyIMG.Name], (Vector2)enemyIMG.Tag, enemyTypes[enemyIMG.Name], enemyIMG.Name));
+                }
+            }
+            this.pause = false;
+        }
+
+        public void ExecutePause()
+        {
+            this.PlayGame = false;
+            this.pause = true;
+            this.mainWindow.KeyDown -= this.mainWindow.OnKeyDown;
         }
 
         public void ExecuteEndGame()
         {
-            this.PlayGame = false;
             this.player = null;
+            this.PlayGame = false;
+            this.EndingGame = true;
             this.mainWindow.KeyDown -= this.mainWindow.OnKeyDown;
+            this.mainWindow.DrawMap(map);
+            this.mainWindow.UpdateMap(this.backupPlayerPos, this.playerSprites[this.selectedPlayer], this.selectedPlayer);
+            for (int i = 0; i <= (playerTypes.Count + enemyTypes.Count+2); i++)
+            {
+                this.mainWindow.BrushStack.Children[i].IsEnabled = true;
+            }
+            this.EndingGame = false;
+            this.EnemyBackup = true;
+            foreach (var agent in enemies)
+            {
+                this.mainWindow.UpdateMap(agent.BackupPos, this.enemySprites[agent.Name], agent.Name);
+            }
+            this.EnemyBackup = false;
         }
 
         public void OnPlayGame(App.Directions newDirection, Vector2 position)
         {
-            this.mainWindow.UpdateMap(this.player.Move(newDirection, this.map), entitySprite);
+            this.mainWindow.UpdateMap(this.player.Move(newDirection, this.map), this.currentPlayerSprite, this.selectedPlayer);
         }
+
 
         #endregion
     }
